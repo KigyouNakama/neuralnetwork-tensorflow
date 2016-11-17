@@ -1,18 +1,7 @@
 import tensorflow as tf
 
-from tensorflow.python.ops import rnn_cell
-from tensorflow.python.ops import rnn
+t = [[1,2,3],[2,3]]
 
-lstm = rnn_cell.BasicLSTMCell(lstm_size)
-# Initial state of the LSTM memory.
-state = tf.zeros([batch_size, lstm.state_size])
-probabilities = []
-loss = 0.0
-for current_batch_of_words in words_in_dataset:
-    # The value of state is updated after processing each batch of words.
-    output, state = lstm(current_batch_of_words, state)
-
-    # The LSTM output can be used to make next word predictions
-    logits = tf.matmul(output, softmax_w) + softmax_b
-    probabilities.append(tf.nn.softmax(logits))
-    loss += loss_function(probabilities, target_words)
+with tf.Session() as sess:
+    #print(sess.run(tf.shape(t)))
+    print("mask is", sess.run(mask))

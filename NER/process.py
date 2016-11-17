@@ -1,7 +1,7 @@
 import tensorflow as tf
 from tensorflow.python.ops import rnn, rnn_cell
-dir1 = "/home/linhsama/Downloads/dataset/NonTag4type.tag"
-dir2 = "/home/linhsama/Downloads/dataset/SubDict_vc.txt"
+dir1 = "/home/bkhn/rnn/neuralnetwork-tensorflow/dataset/NonTag4type.tag"
+dir2 = "/home/bkhn/rnn/neuralnetwork-tensorflow/dataset/SubDict_vc.txt"
 
 # is it better to eliminate from data (!?)
 weak_stop_token = [',',';','...','"','(',')','[',']','{','}','<','>','/','*','@',
@@ -68,11 +68,14 @@ class dataset:
         outputSequence = [] # list of word in outputSequence
         inputBatch = [] # list of sequence in inputBatch
         outputBatch = [] # list of sequence in outputBatch
-
+        count = 0
         with open(dir1) as f:
             for line in f:
                 split = line.rstrip().lstrip().split(" ")
                 if len(split) == 3:
+                    if dict.get(split[0].lower()) == None:
+                        count+=1
+                        continue
                     inputSequence.append(dict.get(split[0].lower()))
                     outputSequence.append(self.getEntity((split[2])))
                     if split[0] in strong_stop_token:
@@ -80,7 +83,7 @@ class dataset:
                         outputBatch.append(outputSequence)
                         inputSequence = []
                         outputSequence = []
-
+        print(count)
         # each word represented by float type vector
         return inputBatch, outputBatch
 
@@ -145,26 +148,34 @@ class NER:
 
 process = dataset()
 dict = process.makeDictFromDataset()
-print(len(dict))
+print("kich co tu dien", len(dict))
 x, y = process.getData(dict)
 
 # batch size x, y = 22151, 22151
-print(len(x))
-print(len(y))
+print("do dai cua batch input", len(x))
+print("do dai cua batch output", len(y))
 # x, y max_length of sequence = 179
-print(max(len(z) for z in x))
-print(max(len(z) for z in y))
+print("do dai lon nhat cua moi xau", max(len(z) for z in x))
 
-z = x[:10]
-with tf.Session() as sess:
-    print(sess.run(process.length(z)))
+print(type(x))
+count = 0
+for l1 in x:
+    for l2 in l1:
+        if l2 == None:
+            count += 1
+        elif len(l2) < 179:
+            p = [0]*(179-len(l2))
+            l2 += p
+
+print("interesting", count)
+va = tf.convert_to_tensor(x[:1000])
 
 data = tf.placeholder(tf.float32, [None, 179, 200])
 target = tf.placeholder(tf.float32, [None, 179, 11])
-"""
-x = tf.Variable(x)
-y = tf.Variable(y)
 
+#x = tf.Variable(x)
+#y = tf.Variable(y)
+"""
 model = NER(data, target)
 sess = tf.Session()
 sess.run(tf.initialize_all_variables())
