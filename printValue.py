@@ -43,8 +43,8 @@ with tf.Session() as sess:
     print(sess.run(tran2))
     print(sess.run(gather))
     print(sess.run(plus))
-    print(sess.run(tf.shape(exam3)))
-    print(sess.run(tf.sign(tf.reduce_max(tf.abs(test), reduction_indices=2))))
+    print("shape of exam3:", sess.run(tf.shape(exam3)))
+    print("", sess.run(tf.sign(tf.reduce_max(tf.abs(test), reduction_indices=2))))
     print(sess.run(length(exam2)))
     #print the random values that we sample
 """    print(sess.run(normal_rv))
