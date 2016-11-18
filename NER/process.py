@@ -1,4 +1,5 @@
 import tensorflow as tf
+import numpy as np
 from tensorflow.python.ops import rnn, rnn_cell
 dir1 = "/home/bkhn/rnn/neuralnetwork-tensorflow/dataset/NonTag4type.tag"
 dir2 = "/home/bkhn/rnn/neuralnetwork-tensorflow/dataset/SubDict_vc.txt"
@@ -73,10 +74,10 @@ class dataset:
             for line in f:
                 split = line.rstrip().lstrip().split(" ")
                 if len(split) == 3:
-                    if dict.get(split[0].lower()) == None:
-                        count+=1
-                        continue
-                    inputSequence.append(dict.get(split[0].lower()))
+                    wordVector = dict.get(split[0].lower())
+                    if wordVector == None:
+                        wordVector = np.random.uniform(-1,1,200)
+                    inputSequence.append(wordVector)
                     outputSequence.append(self.getEntity((split[2])))
                     if split[0] in strong_stop_token:
                         inputBatch.append(inputSequence)
@@ -156,26 +157,41 @@ print("do dai cua batch input", len(x))
 print("do dai cua batch output", len(y))
 # x, y max_length of sequence = 179
 print("do dai lon nhat cua moi xau", max(len(z) for z in x))
+print("do dai nho nhat cua moi xau", min(len(z) for z in x[:100]))
 
-print(type(x))
-count = 0
-for l1 in x:
-    for l2 in l1:
-        if l2 == None:
-            count += 1
-        elif len(l2) < 179:
-            p = [0]*(179-len(l2))
-            l2 += p
+# padding for input
 
-print("interesting", count)
-va = tf.convert_to_tensor(x[:1000])
+for string in x[:1000]:
+    pad = []
+    if len(string) < 179:
+        for word in range(179-len(string)):
+            pad.append([0]*200)
+        string += pad
 
+for string in x[:1000]:
+    if len(string) != 179:
+        print("la")
+    for word in string:
+        if len(word) != 200:
+            print("la")
+
+print("do dai nho nhat cua moi xau", min(len(z) for z in x[:100]))
+
+convert = x[:1]
+for i in convert:
+    print(len(i))
+    for j in i:
+        print(len(j))
+
+va = tf.convert_to_tensor(convert)
+
+"""
 data = tf.placeholder(tf.float32, [None, 179, 200])
 target = tf.placeholder(tf.float32, [None, 179, 11])
 
 #x = tf.Variable(x)
 #y = tf.Variable(y)
-"""
+
 model = NER(data, target)
 sess = tf.Session()
 sess.run(tf.initialize_all_variables())
