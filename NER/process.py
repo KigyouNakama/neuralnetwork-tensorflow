@@ -1,8 +1,8 @@
 import tensorflow as tf
 import numpy as np
 from tensorflow.python.ops import rnn, rnn_cell
-dir1 = "/home/bkhn/rnn/neuralnetwork-tensorflow/dataset/NonTag4type.tag"
-dir2 = "/home/bkhn/rnn/neuralnetwork-tensorflow/dataset/SubDict_vc.txt"
+dir1 = "/home/dhbk/rnn/neuralnetwork-tensorflow/dataset/NonTag4type.tag"
+dir2 = "/home/dhbk/rnn/neuralnetwork-tensorflow/dataset/SubDict_vc.txt"
 
 # is it better to eliminate from data (!?)
 weak_stop_token = [',',';','...','"','(',')','[',']','{','}','<','>','/','*','@',
@@ -69,7 +69,7 @@ class dataset:
         outputSequence = [] # list of word in outputSequence
         inputBatch = [] # list of sequence in inputBatch
         outputBatch = [] # list of sequence in outputBatch
-        count = 0
+
         with open(dir1) as f:
             for line in f:
                 split = line.rstrip().lstrip().split(" ")
@@ -77,6 +77,9 @@ class dataset:
                     wordVector = dict.get(split[0].lower())
                     if wordVector == None:
                         wordVector = np.random.uniform(-1,1,200)
+                        wordVector = list(wordVector)
+                #    if len(wordVector) == 200:
+                #        print(type(wordVector))
                     inputSequence.append(wordVector)
                     outputSequence.append(self.getEntity((split[2])))
                     if split[0] in strong_stop_token:
@@ -84,7 +87,6 @@ class dataset:
                         outputBatch.append(outputSequence)
                         inputSequence = []
                         outputSequence = []
-        print(count)
         # each word represented by float type vector
         return inputBatch, outputBatch
 
@@ -94,8 +96,8 @@ class dataset:
         length = tf.cast(length, tf.int32)
         return length
 
-class NER:
-    def __init__(self, data, target, num_hidden = 200, num_layers = 1):
+class SequenceLabelling:
+    def __init__(self, data, target, num_hidden = 179, num_layers = 1):
         self.data = data
         self.target = target # batch size * timesteps(input sequence length) * features (word vector length)
         self.num_hidden = num_hidden # bactch size * timesteps * output size (classes size)
@@ -103,6 +105,7 @@ class NER:
         self.prediction
         self.error
         self.optimize
+        self.cost
 
     def prediction(self):
         output, _ = rnn.dynamic_rnn(
@@ -120,16 +123,20 @@ class NER:
         # Flatten to apply same weights to all time steps
         # nhưng nếu tổng số phần tử không chia hết cho số các ẩn số thì sao?
         output = tf.reshape(output, [-1, self.num_hidden])
-        prediction = tf.nn.softmax(tf.matmul(output, weight)+bias)
-        prediction = tf.reshape(prediction, [-1, max_length, num_classes])
-        return prediction
+        predictionn = tf.nn.softmax(tf.matmul(output, weight)+bias)
+        predictionn = tf.reshape(predictionn, [-1, max_length, num_classes])
+        return predictionn
 
     def cost(self):
-        # compute cross entropy for each frame
-        cross_entropy = self.target*tf.log(self.prediction())
-        # do you understand reduce_s
-        cross_entropy = -tf.reduce_sum(cross_entropy, reduction_indices=1)
+        cross_entropy = -tf.reduce_sum(
+            self.target * tf.log(self.prediction()), reduction_indices=1)
+        cross_entropy = tf.reduce_mean(cross_entropy)
         return cross_entropy
+        # compute cross entropy for each frame
+        #cross_entropy = self.target*tf.log(self.prediction())
+        # do you understand reduce_s
+        #cross_entropy = -tf.reduce_sum(cross_entropy, reduction_indices=1)
+        #return cross_entropy
 
     def optimize(self):
         learning_rate = 0.03
@@ -138,13 +145,18 @@ class NER:
 
     def error(self):
         mistakes = tf.not_equal(
-            tf.argmax(self.target, 2), tf.argmax(self.prediction, 2))
+            tf.argmax(self.target, 2), tf.argmax(self.prediction(), 2))
         return tf.reduce_mean(tf.cast(mistakes, tf.float32))
     #
     def weight_and_bias(self, in_size, out_size):
         weight = tf.truncated_normal([in_size, out_size], stddev=0.01)
         bias = tf.constant(0.1, shape=[out_size])
         return tf.Variable(weight), tf.Variable(bias)
+
+    def pr(self):
+        var = tf.Variable(tf.truncated_normal([2,3,4],stddev = 0.1))
+        print("linhlinhlinh")
+        return var
 
 
 process = dataset()
@@ -159,24 +171,79 @@ print("do dai cua batch output", len(y))
 print("do dai lon nhat cua moi xau", max(len(z) for z in x))
 print("do dai nho nhat cua moi xau", min(len(z) for z in x[:100]))
 
-# padding for input
 
-for string in x[:1000]:
-    pad = []
-    if len(string) < 179:
-        for word in range(179-len(string)):
-            pad.append([0]*200)
-        string += pad
-
-for string in x[:1000]:
-    if len(string) != 179:
-        print("la")
-    for word in string:
-        if len(word) != 200:
+# check for length
+def check_length():
+    for string in x[:1000]:
+        if len(string) != 179:
             print("la")
+        for word in string:
+            if len(word) != 200:
+                print("la")
 
-print("do dai nho nhat cua moi xau", min(len(z) for z in x[:100]))
+# padding for input
+def padding(x,type):
+    feature_length = 0
+    if type == "in":
+        feature_length = 200
+    else: feature_length = 11
+    for string in x:
+        pad = []
+        if len(string) < 179:
+            for word in range(179 - len(string)):
+                pad.append([0] * feature_length)
+            string += pad
+    return x
 
+
+x_train = x[:10000]
+y_train = y[:10000]
+x_test = x[10000:11000]
+y_test = y[10000:11000]
+#print(type(x_test))
+
+x_test = padding(x_test, "in")
+y_test = padding(y_test, "out")
+
+#x_test = tf.convert_to_tensor(x_test)
+#y_test = tf.convert_to_tensor(y_test)
+
+"""
+data = tf.placeholder(tf.float32, [None, 179, 200])
+print(type(x_test))
+
+with tf.Session() as sess:
+    #sess.run(tf.initialize_all_variables())
+    #print("shape of x_placeholder", sess.run(tf.shape(data), feed_dict={data:x_train}))
+    print("shape of x_test", sess.run(tf.shape(x_test)))
+    print("shape of y_test", sess.run(tf.shape(y_test)))
+    print(sess.run(x_test[0][0][0]))
+"""
+print("start")
+
+#print(len(x_train[110]))
+
+data = tf.placeholder(tf.float32, [None, 179, 200])
+target = tf.placeholder(tf.float32, [None, 179, 11])
+model = SequenceLabelling(data, target)
+sess = tf.Session()
+sess.run(tf.initialize_all_variables())
+for epoch in range(10):
+    for index in range(10):
+        x_feed = x_train[index*1000:(index+1)*1000]
+        y_feed = y_train[index*1000:(index+1)*1000]
+        x_feed = padding(x_feed, "in")
+        y_feed = padding(y_feed, "out")
+        #x_feed = tf.convert_to_tensor(x_feed)
+        #y_feed = tf.convert_to_tensor(y_feed)
+        print("shape of x_feed, y_feed", sess.run(tf.shape(x_feed)))
+        sess.run(model.optimize(),
+                feed_dict = {data: x_feed, target: y_feed})
+    error = sess.run(model.error(),
+                feed_dict = { data: x_test, target: y_test})
+    print('Epoch {:2d} error {:3.1f}%'.format(epoch + 1, 100 * error))
+
+"""
 convert = x[:1]
 for i in convert:
     print(len(i))
@@ -184,10 +251,8 @@ for i in convert:
         print(len(j))
 
 va = tf.convert_to_tensor(convert)
-
 """
-data = tf.placeholder(tf.float32, [None, 179, 200])
-target = tf.placeholder(tf.float32, [None, 179, 11])
+"""
 
 #x = tf.Variable(x)
 #y = tf.Variable(y)
@@ -215,44 +280,4 @@ for epoch in range(10):
  one word is putted into one cell - GRUCell or LSTMCell
  a sequence is putted into n-timesteps - dynamic_rnn or rnn(cell, data)
  - which return outputActivations and lastHiddenState as tensors.
-"""
-#x = tf.Variable(x)
-#y = tf.Variable(y)
-
-
-"""
-max_length = 153
-frame_size = 200
-n_classes = 11
-n_hidden = 250
-
-# training input, output
-input = tf.placeholder(tf.float32, [None, max_length, frame_size])
-output = tf.placeholder(tf.float32, [None, max_length, n_classes])
-
-# Define weights
-weights = tf.Variable(tf.random_normal([n_hidden, n_classes]))
-biases = tf.Variable(tf.random_normal([n_classes]))
-
-gru_cell = rnn_cell.GRUCell(n_hidden)
-
-output, state = tf.nn.dynamic_rnn(
-    gru_cell,
-    input,
-    dtype=tf.float32
-)
-
-output = tf.reshape(output, [-1, n_hidden])
-prediction = tf.nn.softmax(tf.matmul(output, weights) + biases)
-prediction = tf.reshape(prediction, [-1, max_length, n_classes])
-
-cross_entropy = -tf.reduce_sum(output * tf.log(prediction), reduction_indices=1)
-cross_entropy = tf.reduce_mean(cross_entropy)
-
-optimizer = tf.train.RMSPropOptimizer(0.003)
-optimizer = optimizer.minimize(cross_entropy)
-
-with tf.Session() as sess:
-    for epoch in 10000:
-        sess.run(optimizer, {input:x, output:y})
 """

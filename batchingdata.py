@@ -18,10 +18,35 @@ with tf.Session() as sess:
     print("a_padded", sess.run(a_padded))
     print("ket qua", sess.run(result))
 
-b = [[[1,2,3],[4,5]],[[6],[7,8],[9,10,11]]]
+b = [[[1,2,3],[4,5,3]],[[6,2,2],[2,7,8],[9,10,11]]]
 for x in b:
-    for y in x:
-        if len(y) < 3:
-            p = [0]*(3-len(y))
-            y += p
-        print(y)
+    pad = []
+    if len(x) < 3:
+        for word in range(3-len(x)):
+            pad.append([0]*3)
+            print("pad: ", pad)
+        x+=pad
+        print("x", x)
+print("b", b)
+
+inputSequence = [] # list of word in inputSequence
+outputSequence = [] # list of word in outputSequence
+inputBatch = [] # list of sequence in inputBatch
+outputBatch = [] # list of sequence in outputBatch
+for i in range(6):
+    inputSequence.append([1]*3)
+    print("inputSe", inputSequence)
+    if i % 2 == 1:
+        inputBatch.append(inputSequence)
+        print("inputBa", inputBatch)
+        inputSequence = []
+print(inputBatch)
+with tf.Session() as sess:
+    print(sess.run(tf.shape(inputBatch)))
+
+x = [[[1,1,1],[1,1,1],[1,1,1]]]
+data = tf.placeholder(tf.float32, [None, 3, 3])
+with tf.Session() as sess:
+    print("shape of data", sess.run(tf.shape(data), feed_dict={data: x}))
+    print(sess.run(tf.shape(x)))
+    print(type(sess.run(data[0][0][0], feed_dict={data: x})))
