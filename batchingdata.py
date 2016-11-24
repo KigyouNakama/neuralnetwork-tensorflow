@@ -50,3 +50,6 @@ with tf.Session() as sess:
     print("shape of data", sess.run(tf.shape(data), feed_dict={data: x}))
     print(sess.run(tf.shape(x)))
     print(type(sess.run(data[0][0][0], feed_dict={data: x})))
+
+x = list(x)
+print(x)

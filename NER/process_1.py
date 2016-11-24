@@ -100,8 +100,8 @@ class SequenceLabelling:
     def __init__(self, data, target, num_hidden = 200, num_layers = 1):
         self.data = data
         self.target = target # batch size * timesteps(input sequence length) * features (word vector length)
-        self.num_hidden = num_hidden # bactch size * timesteps * output size (classes size)
-        self.num_layers = num_layers
+        self._num_hidden = num_hidden # bactch size * timesteps * output size (classes size)
+        self._num_layers = num_layers
         self.prediction
         self.error
         self.optimize
@@ -109,22 +109,22 @@ class SequenceLabelling:
 
     def prediction(self):
         print("start prediction")
+        cell = rnn_cell.GRUCell(self._num_hidden)
         output, _ = rnn.dynamic_rnn(
-            rnn_cell.GRUCell(self.num_hidden),
+            cell,
             self.data,
-            dtype=tf.float32,
-            sequence_length=179
+            dtype=tf.float32
         )
         print("built rnn graph")
         # softmax layer
         max_length = int(self.target.get_shape()[1]) # timesteps
         num_classes = int(self.target.get_shape()[2]) # output size
         # weight [num_hidden, output size] bias [output size]
-        weight, bias = self.weight_and_bias(self.num_hidden, num_classes)
+        weight, bias = self.weight_and_bias(self._num_hidden, num_classes)
         # Flatten to apply same weights to all time steps
         # nhưng nếu tổng số phần tử không chia hết cho số các ẩn số thì sao?
         print("done weight and bias")
-        output = tf.reshape(output, [-1, self.num_hidden])
+        output = tf.reshape(output, [-1, self._num_hidden])
         prediction = tf.nn.softmax(tf.matmul(output, weight)+bias)
         prediction = tf.reshape(prediction, [-1, max_length, num_classes])
         return prediction
@@ -214,7 +214,7 @@ y_test = y[10000:11000]
 
 x_test = padding(x_test, "in")
 y_test = padding(y_test, "out")
-
+print("type of x test", type(x_test))
 #x_test = tf.convert_to_tensor(x_test)
 #y_test = tf.convert_to_tensor(y_test)
 
@@ -249,9 +249,9 @@ for epoch in range(10):
         #y_feed = tf.convert_to_tensor(y_feed)
         print("shape of x_feed", sess.run(tf.shape(x_feed)))
         print("shape of y_feed", sess.run(tf.shape(y_feed)))
-        sess.run(model.optimize())
-        #sess.run(model.optimize(),
-        #        feed_dict = {data: x_feed, target: y_feed})
+        #sess.run(model.optimize())
+        sess.run(model.optimize(),
+                feed_dict = {data: x_feed, target: y_feed})
     error = sess.run(model.error(),
                 feed_dict = { data: x_test, target: y_test})
     print('Epoch {:2d} error {:3.1f}%'.format(epoch + 1, 100 * error))

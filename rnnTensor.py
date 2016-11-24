@@ -1,38 +1,35 @@
+import numpy as np
 import tensorflow as tf
-"""
-Placeholders
-"""
-x = tf.placeholder(tf.int32, [batch_size, num_steps], name='input_placeholder')
-y = tf.placeholder(tf.int32, [batch_size, num_steps], name='labels_placeholder')
-init_state = tf.zeros([batch_size, state_size])
 
-"""
-Inputs
-"""
+EPOCHS = 10000
+PRINT_STEP = 1000
 
-x_one_hot = tf.one_hot(x, num_classes)
-rnn_inputs = tf.unpack(x_one_hot, axis=1)
+data = np.array([[1, 2, 3, 4, 5], [2, 3, 4, 5, 6], [3, 4, 5, 6, 7]])
+target = np.array([[6], [7], [8]])
+print("data shape", data.shape)
+x_ = tf.placeholder(tf.float32, [None, data.shape[1]])
+y_ = tf.placeholder(tf.float32, [None, 1])
 
-"""
-RNN
-"""
+cell = tf.nn.rnn_cell.BasicRNNCell(num_units=data.shape[1])
 
-cell = tf.nn.rnn_cell.BasicRNNCell(state_size)
-rnn_outputs, final_state = tf.nn.rnn(cell, rnn_inputs, initial_state=init_state)
+outputs, states = tf.nn.rnn(cell, [x_], dtype=tf.float32)
+outputs = outputs[-1]
 
-"""
-Predictions, loss, training step
-"""
+W = tf.Variable(tf.random_normal([data.shape[1], 1]))
+b = tf.Variable(tf.random_normal([1]))
 
-with tf.variable_scope('softmax'):
-    W = tf.get_variable('W', [state_size, num_classes])
-    b = tf.get_variable('b', [num_classes], initializer=tf.constant_initializer(0.0))
-logits = [tf.matmul(rnn_output, W) + b for rnn_output in rnn_outputs]
-predictions = [tf.nn.softmax(logit) for logit in logits]
+y = tf.matmul(outputs, W) + b
 
-y_as_list = [tf.squeeze(i, squeeze_dims=[1]) for i in tf.split(1, num_steps, y)]
+cost = tf.reduce_mean(tf.square(y - y_))
+train_op = tf.train.RMSPropOptimizer(0.005, 0.2).minimize(cost)
 
-loss_weights = [tf.ones([batch_size]) for i in range(num_steps)]
-losses = tf.nn.seq2seq.sequence_loss_by_example(logits, y_as_list, loss_weights)
-total_loss = tf.reduce_mean(losses)
-train_step = tf.train.AdagradOptimizer(learning_rate).minimize(total_loss)
+with tf.Session() as sess:
+    tf.initialize_all_variables().run()
+    for i in range(EPOCHS):
+        sess.run(train_op, feed_dict={x_: data, y_: target})
+        if i % PRINT_STEP == 0:
+            c = sess.run(cost, feed_dict={x_: data, y_: target})
+            print('training cost:', c)
+
+    response = sess.run(y, feed_dict={x_: data})
+    print(response)

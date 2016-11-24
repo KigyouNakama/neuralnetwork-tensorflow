@@ -109,10 +109,9 @@ class SequenceLabelling:
 
     def prediction(self):
         output, _ = rnn.dynamic_rnn(
-            rnn_cell.BasicLSTMCell(
+            rnn_cell.LSTMCell(
                 self.num_hidden),
             self.data,
-            sequence_length=179,
             dtype = tf.float32
         )
         # softmax layer
