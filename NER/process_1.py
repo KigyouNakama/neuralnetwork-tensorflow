@@ -102,10 +102,10 @@ class SequenceLabelling:
         self.target = target # batch size * timesteps(input sequence length) * features (word vector length)
         self._num_hidden = num_hidden # bactch size * timesteps * output size (classes size)
         self._num_layers = num_layers
-        self.prediction
-        self.error
-        self.optimize
-        self.cost
+        self.predict = self.prediction()
+        self.er = self.error()
+        self.loss = self.cost()
+        self.opt = self.optimize()
 
     def prediction(self):
         print("start prediction")
@@ -131,7 +131,7 @@ class SequenceLabelling:
 
     def cost(self):
         # Compute cross entropy for each frame.
-        cross_entropy = self.target * tf.log(self.prediction())
+        cross_entropy = self.target * tf.log(self.predict)
         cross_entropy = -tf.reduce_sum(cross_entropy, reduction_indices=2)
         mask = tf.sign(tf.reduce_max(tf.abs(self.target), reduction_indices=2))
         cross_entropy *= mask
@@ -145,11 +145,11 @@ class SequenceLabelling:
         learning_rate = 0.0003
         optimizer = tf.train.AdamOptimizer(learning_rate)
         print("optimize")
-        return optimizer.minimize(self.cost())
+        return optimizer.minimize(self.loss)
 
     def error(self):
         mistakes = tf.not_equal(
-            tf.argmax(self.target, 2), tf.argmax(self.prediction(), 2))
+            tf.argmax(self.target, 2), tf.argmax(self.predict, 2))
         mistakes = tf.cast(mistakes, tf.float32)
         mask = tf.sign(tf.reduce_max(tf.abs(self.target), reduction_indices=2))
         mistakes *= mask
@@ -208,8 +208,8 @@ def padding(x,type):
 
 x_train = x[:10000]
 y_train = y[:10000]
-x_test = x[10000:11000]
-y_test = y[10000:11000]
+x_test = x[10000:12000]
+y_test = y[10000:12000]
 
 
 x_test = padding(x_test, "in")
@@ -238,20 +238,17 @@ data = tf.placeholder(tf.float32, [None, 179, 200])
 target = tf.placeholder(tf.float32, [None, 179, 11])
 model = SequenceLabelling(data, target)
 sess = tf.Session()
-sess.run(tf.initialize_all_variables())
+init = tf.initialize_all_variables()
+sess.run(init)
 for epoch in range(10):
-    for index in range(10):
-        x_feed = x_train[index*1000:(index+1)*1000]
-        y_feed = y_train[index*1000:(index+1)*1000]
+    for index in range(100):
+        x_feed = x_train[index*100:(index+1)*100]
+        y_feed = y_train[index*100:(index+1)*100]
         x_feed = padding(x_feed, "in")
         y_feed = padding(y_feed, "out")
-        #x_feed = tf.convert_to_tensor(x_feed)
-        #y_feed = tf.convert_to_tensor(y_feed)
-        print("shape of x_feed", sess.run(tf.shape(x_feed)))
-        print("shape of y_feed", sess.run(tf.shape(y_feed)))
-        #sess.run(model.optimize())
-        sess.run(model.optimize(),
+        sess.run(model.opt,
                 feed_dict = {data: x_feed, target: y_feed})
-    error = sess.run(model.error(),
+    error = sess.run(model.er,
                 feed_dict = { data: x_test, target: y_test})
-    print('Epoch {:2d} error {:3.1f}%'.format(epoch + 1, 100 * error))
+    print('Epoch {:2d} error {:f}%'.format(epoch + 1, 100*error))
+
