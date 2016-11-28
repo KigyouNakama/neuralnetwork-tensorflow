@@ -115,7 +115,6 @@ class SequenceLabelling:
             self.data,
             dtype=tf.float32
         )
-        print("built rnn graph")
         # softmax layer
         max_length = int(self.target.get_shape()[1]) # timesteps
         num_classes = int(self.target.get_shape()[2]) # output size

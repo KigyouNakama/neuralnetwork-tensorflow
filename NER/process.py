@@ -97,7 +97,7 @@ class dataset:
         return length
 
 class SequenceLabelling:
-    def __init__(self, data, target, num_hidden = 179, num_layers = 1):
+    def __init__(self, data, target, num_hidden = 200, num_layers = 1):
         self.data = data
         self.target = target # batch size * timesteps(input sequence length) * features (word vector length)
         self.num_hidden = num_hidden # bactch size * timesteps * output size (classes size)
@@ -108,7 +108,8 @@ class SequenceLabelling:
         self.opt = self.optimize()
 
     def prediction(self):
-        cell = rnn_cell.GRUCell(self.num_hidden)
+        numu = int(self.data.get_shape()[2])
+        cell = rnn_cell.GRUCell(numu)
         output, _ = rnn.dynamic_rnn(
             cell,
             self.data,
@@ -118,23 +119,23 @@ class SequenceLabelling:
         max_length = int(self.target.get_shape()[1]) # timesteps
         num_classes = int(self.target.get_shape()[2]) # output size
         # weight [num_hidden, output size] bias [output size]
-        weight, bias = self.weight_and_bias(self.num_hidden, num_classes)
+        weight, bias = self.weight_and_bias(numu, num_classes)
         # Flatten to apply same weights to all time steps
         # nhưng nếu tổng số phần tử không chia hết cho số các ẩn số thì sao?
-        output = tf.reshape(output, [-1, self.num_hidden])
+        output = tf.reshape(output, [-1, numu])
         predictionn = tf.nn.softmax(tf.matmul(output, weight)+bias)
         predictionn = tf.reshape(predictionn, [-1, max_length, num_classes])
         return predictionn
 
     def cost(self):
         cross_entropy = -tf.reduce_sum(
-            self.target * tf.log(self.predict), reduction_indices=1)
+            self.target * tf.log(self.predict), reduction_indices=2)
         cross_entropy = tf.reduce_mean(cross_entropy)
         return cross_entropy
 
 
     def optimize(self):
-        learning_rate = 0.03
+        learning_rate = 0.003
         optimizer = tf.train.RMSPropOptimizer(learning_rate)
         return optimizer.minimize(self.loss)
 
@@ -191,10 +192,10 @@ def padding(x,type):
     return x
 
 
-x_train = x[:20000]
-y_train = y[:20000]
-x_test = x[20000:21000]
-y_test = y[20000:21000]
+x_train = x[:10000]
+y_train = y[:10000]
+x_test = x[10000:11000]
+y_test = y[10000:11000]
 #print(type(x_test))
 
 x_test = padding(x_test, "in")
@@ -224,7 +225,7 @@ model = SequenceLabelling(data, target)
 sess = tf.Session()
 sess.run(tf.initialize_all_variables())
 for epoch in range(10):
-    for index in range(200):
+    for index in range(100):
         x_feed = x_train[index*100:(index+1)*100]
         y_feed = y_train[index*100:(index+1)*100]
         x_feed = padding(x_feed, "in")
