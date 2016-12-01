@@ -135,7 +135,7 @@ class SequenceLabelling:
 
 
     def optimize(self):
-        learning_rate = 0.003
+        learning_rate = 0.005
         optimizer = tf.train.RMSPropOptimizer(learning_rate)
         return optimizer.minimize(self.loss)
 
@@ -191,11 +191,13 @@ def padding(x,type):
             string += pad
     return x
 
-
-x_train = x[:10000]
-y_train = y[:10000]
-x_test = x[10000:11000]
-y_test = y[10000:11000]
+num_start = 2000
+num_immediate = 12000
+num_end = 22000
+x_train = x[num_start:num_immediate]
+y_train = y[num_start:num_immediate]
+x_test = x[20000:num_end]
+y_test = y[20000:num_end]
 #print(type(x_test))
 
 x_test = padding(x_test, "in")
@@ -234,7 +236,7 @@ for epoch in range(10):
                 feed_dict = {data: x_feed, target: y_feed})
     error = sess.run(model.er,
                 feed_dict = { data: x_test, target: y_test})
-    print('Epoch {:2d} error {:f}%'.format(epoch + 1, 100*error))
+    print('Epoch {:2d} error {:f}%'.format(epoch + 1, error))
 
 """
 convert = x[:1]

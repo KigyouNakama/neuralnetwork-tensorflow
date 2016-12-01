@@ -52,4 +52,11 @@ with tf.Session() as sess:
     print(type(sess.run(data[0][0][0], feed_dict={data: x})))
 
 x = list(x)
-print(x)
+print("x = ", x)
+x = x[0]
+print("x[-1] = ", x)
+y = [[1.,1.,0.],[1.,1.,1.]],[[1.,1.,1.],[1.,1.,1.]]]
+z = [[[1.,1.,0.],[1.,1.,1.]],[[1.,1.,1.],[1.,1.,1.]]]
+tf.sof
+result = tf.matmul(y,z)
+print(tf.Session().run(result))
