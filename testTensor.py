@@ -1,11 +1,10 @@
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.ops import rnn, rnn_cell
-EPOCHS = 10000
+EPOCHS = 2000
 PRINT_STEP = 1000
 
 data = np.array([[[1,2,3],[4,5,6],[13,14,15]],[[7,8,9],[10,11,12],[16,17,18]]])
-
 target = np.array([[[0,1],[1,0],[0,1]],[[1,0],[1,0],[0,1]]])
 print("data shape", data.shape)
 
@@ -23,7 +22,8 @@ b = tf.Variable(tf.constant(0.1, shape=[target.shape[2]]))
 print("done params")
 
 y = tf.matmul(outputs, W) + b
-y = tf.reshape(y, [-1,target.shape[1],target.shape[2]])
+y_softmax = tf.nn.softmax(y)
+y = tf.reshape(y_softmax, [-1,target.shape[1],target.shape[2]])
 
 cross_entropy = tf.reduce_mean(-tf.reduce_sum(y_ * tf.log(y), reduction_indices=2))
 train_op = tf.train.RMSPropOptimizer(0.005).minimize(cross_entropy)
@@ -43,7 +43,11 @@ with tf.Session() as sess:
         #print("done sess.run")
         if i % PRINT_STEP == 0:
             c = sess.run(error, feed_dict={x_: data, y_: target})
-            print('training cost:', c)
-        #print("done lev1")
+            print('training cost: {:f}'.format(c))
     response = sess.run(y, feed_dict={x_: data})
-    print(response)
+    print(type(response[0][0][0]))
+    for i in response:
+        for j in i:
+            k = sess.run(tf.arg_max(j, 0))
+            print(k)
+
