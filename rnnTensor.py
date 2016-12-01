@@ -1,11 +1,16 @@
 import numpy as np
 import tensorflow as tf
-
+from tensorflow.python.ops import rnn, rnn_cell
 EPOCHS = 10000
 PRINT_STEP = 1000
 
-data = np.array([[1, 2, 3, 4, 5], [2, 3, 4, 5, 6], [3, 4, 5, 6, 7]])
-target = np.array([[6], [7], [8]])
+data = np.array([[1, 2, 3, 4, 5],
+                 [2, 3, 4, 5, 6],
+                 [3, 4, 5, 6, 7]])
+target = np.array([[6],
+                   [7],
+                   [8]])
+
 print("data shape", data.shape)
 
 x_ = tf.placeholder(tf.float32, [None, data.shape[1]])
@@ -30,6 +35,8 @@ with tf.Session() as sess:
         sess.run(train_op, feed_dict={x_: data, y_: target})
         if i % PRINT_STEP == 0:
             print("shape outputs", sess.run(tf.shape(output), feed_dict={x_: data, y_: target}))
+            print(sess.run(output, feed_dict={x_: data, y_: target}))
+        #    print(sess.run(y,  feed_dict={x_: data, y_: target}))
             c = sess.run(cost, feed_dict={x_: data, y_: target})
             print('training cost:', c)
 

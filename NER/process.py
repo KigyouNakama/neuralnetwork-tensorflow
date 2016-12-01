@@ -1,8 +1,8 @@
 import tensorflow as tf
 import numpy as np
 from tensorflow.python.ops import rnn, rnn_cell
-dir1 = "/home/dhbk/rnn/neuralnetwork-tensorflow/dataset/NonTag4type.tag"
-dir2 = "/home/dhbk/rnn/neuralnetwork-tensorflow/dataset/SubDict_vc.txt"
+dir1 = "/home/linhsama/PycharmProjects/neuralnetwork-tensorflow/dataset/NonTag4type.tag"
+dir2 = "/home/linhsama/PycharmProjects/neuralnetwork-tensorflow/dataset/SubDict_vc.txt"
 
 # is it better to eliminate from data (!?)
 weak_stop_token = [',',';','...','"','(',')','[',']','{','}','<','>','/','*','@',

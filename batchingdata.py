@@ -44,19 +44,16 @@ print(inputBatch)
 with tf.Session() as sess:
     print(sess.run(tf.shape(inputBatch)))
 
-x = [[[1,1,1],[1,1,1],[1,1,1]]]
+x = [[[1,1,1],[1,1,1],[1,3,2]]]
+y = [[1,1,1],[1,1,1],[1,3,2]]
 data = tf.placeholder(tf.float32, [None, 3, 3])
 with tf.Session() as sess:
     print("shape of data", sess.run(tf.shape(data), feed_dict={data: x}))
     print(sess.run(tf.shape(x)))
     print(type(sess.run(data[0][0][0], feed_dict={data: x})))
+    print(sess.run(tf.arg_max(y, 0)))
 
-x = list(x)
-print("x = ", x)
-x = x[0]
-print("x[-1] = ", x)
-y = [[1.,1.,0.],[1.,1.,1.]],[[1.,1.,1.],[1.,1.,1.]]]
-z = [[[1.,1.,0.],[1.,1.,1.]],[[1.,1.,1.],[1.,1.,1.]]]
-tf.sof
-result = tf.matmul(y,z)
-print(tf.Session().run(result))
+    x = [[[1,2,3],[4,5,3]],[[6,2,2],[2,7,8]]]
+    y = [[[23333333,3333321,2333332],[3333343,433333,122222]],[[1231231236,323122,53131232],[31312362,73131237,9313138]]]
+    mistakes = tf.not_equal(tf.argmax(x, 2), tf.argmax(y, 2))
+    print(sess.run(tf.reduce_mean(tf.cast(mistakes, tf.float32))))
