@@ -6,15 +6,10 @@
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/misc.xml" afterPath="$PROJECT_DIR$/.idea/misc.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/NER/process.py" afterPath="$PROJECT_DIR$/NER/process.py" />
-<<<<<<< HEAD
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/batchingdata.py" afterPath="$PROJECT_DIR$/batchingdata.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/rnnTensor.py" afterPath="$PROJECT_DIR$/rnnTensor.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/test.py" afterPath="$PROJECT_DIR$/test.py" />
-=======
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/rnnTensor.py" afterPath="$PROJECT_DIR$/rnnTensor.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/test.py" afterPath="$PROJECT_DIR$/test.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/testTensor.py" afterPath="$PROJECT_DIR$/testTensor.py" />
->>>>>>> 948250360301e612f6b6f093680318791823eb84
     </list>
     <ignored path="firstTF.iws" />
     <ignored path=".idea/workspace.xml" />

@@ -1,8 +1,8 @@
 import tensorflow as tf
 import numpy as np
 from tensorflow.python.ops import rnn, rnn_cell
-dir1 = "/home/linhsama/PycharmProjects/neuralnetwork-tensorflow/dataset/NonTag4type.tag"
-dir2 = "/home/linhsama/PycharmProjects/neuralnetwork-tensorflow/dataset/SubDict_vc.txt"
+dir1 = "/home/dhbk/rnn/neuralnetwork-tensorflow/dataset/NonTag4type.tag"
+dir2 = "/home/dhbk/rnn/neuralnetwork-tensorflow/dataset/SubDict_vc.txt"
 
 # is it better to eliminate from data (!?)
 weak_stop_token = [',',';','...','"','(',')','[',']','{','}','<','>','/','*','@',
@@ -16,6 +16,7 @@ named_entity = ['O', 'I-PER', 'I-LOC', 'I-TOUR', 'I-ORG', 'I-PRO',
                      'B-PER', 'B-LOC', 'B-TOUR', 'B-ORG', 'B-PRO']
 
 class dataset:
+
     # return @dict[word: listValueOfFloatTypeVector]
     def makeDictFromDataset(self):
         dictionary = {}
@@ -35,34 +36,6 @@ class dataset:
         list = [0] * 11
         list[named_entity.index(entity)] = 1
         return list
-
-    #
-    def data(self, dict):
-        inputSequence = [] # list of word in inputSequence
-        outputSequence = [] # list of word in outputSequence
-        inputBatch = [] # list of sequence in inputBatch
-        outputBatch = [] # list of sequence in outputBatch
-
-        with open(dir1) as f:
-            for line in f:
-                split = line.rstrip().lstrip().split(" ")
-                if split[0] in strong_stop_token:
-                    inputSequence.append(dict.get(split[0].lower()))
-                    if len(inputSequence) != 0:
-                        inputBatch.append(inputSequence)
-                        outputBatch.append(outputSequence)
-                    inputSequence = []
-                    outputSequence = []
-                else:
-                    if len(split) == 3:
-                        inputSequence.append(dict.get(split[0].lower()))
-                        outputSequence.append(self.getEntity((split[2])))
-                #    if (split[0] not in weak_stop_token) and (len(split) == 3):
-                #        inputSequence.append(dict.get(split[0].lower()))
-                #        outputSequence.append(self.getEntity((split[2])))
-
-        # each word represented by float type vector
-        return inputBatch, outputBatch
 
     def getData(self, dict):
         inputSequence = [] # list of word in inputSequence
@@ -89,6 +62,12 @@ class dataset:
                         outputSequence = []
         # each word represented by float type vector
         return inputBatch, outputBatch
+
+    def enummerate(self, inputBatch):
+        listOfLength = [0]*180
+        for string in inputBatch:
+            listOfLength[len(string)]+=1
+        print(listOfLength)
 
     def length(self, input):
         used = tf.sign(tf.reduce_max(tf.abs(input), reduction_indices=2))
@@ -159,6 +138,7 @@ process = dataset()
 dict = process.makeDictFromDataset()
 print("kich co tu dien", len(dict))
 x, y = process.getData(dict)
+#process.enummerate(x)
 
 # batch size x, y = 22151, 22151
 print("do dai cua batch input", len(x))
@@ -166,7 +146,6 @@ print("do dai cua batch output", len(y))
 # x, y max_length of sequence = 179
 print("do dai lon nhat cua moi xau", max(len(z) for z in x))
 print("do dai nho nhat cua moi xau", min(len(z) for z in x[:100]))
-
 
 # check for length
 def check_length():
@@ -193,7 +172,7 @@ def padding(x,type):
 
 num_start = 2000
 num_immediate = 12000
-num_end = 22000
+num_end = 21000
 x_train = x[num_start:num_immediate]
 y_train = y[num_start:num_immediate]
 x_test = x[20000:num_end]
@@ -236,7 +215,7 @@ for epoch in range(10):
                 feed_dict = {data: x_feed, target: y_feed})
     error = sess.run(model.er,
                 feed_dict = { data: x_test, target: y_test})
-    print('Epoch {:2d} error {:f}%'.format(epoch + 1, error))
+    print('Epoch {:2d} error {:f}%'.format(epoch + 1, 100*error))
 
 """
 convert = x[:1]
