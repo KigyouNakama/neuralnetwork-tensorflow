@@ -1,10 +1,11 @@
 import csv, gzip, json
-import re
+import sys
 import os, random, tensorflow as tf
 import matplotlib.pyplot as plt
 from nltk.tokenize import word_tokenize
 from nltk import PorterStemmer
 from numpy import array
+from pyasn1.type.char import TeletexString
 
 csv.field_size_limit(500 * 1024 * 1024)
 
@@ -14,9 +15,17 @@ pEncodeLabel = os.path.abspath(commonPath+'encode_label')
 pTrainingCost = os.path.abspath(commonPath+'training_cost')
 pTestingCost = os.path.abspath(commonPath+'tesing_cost')
 
-def loadTrainAndTest():
-    data = []
-    label = []
+def loadTrTe():
+    train_data = []
+    train_label = []
+    test_data = []
+    test_label = []
+    data_positive = []
+    data_negative = []
+    data_neural = []
+    label_positive = []
+    label_neural = []
+    label_negative = []
     count = 0
     MAX_POS = 110000
     MIN_NEG = 4080362
@@ -27,29 +36,55 @@ def loadTrainAndTest():
     with open(pEncodeData, 'r') as fData, open(pEncodeLabel, 'r') as fLabel:
         for line in fData:
             count += 1
-            if (count <= MAX_POS) or \
-                    (count > MIN_NEG and count <= (MIN_NEG + MAX_POS)) or \
-                    (count > MIN_NEU and count <= TOTAL):
-                data.append(line)
-        print(data.__len__())
+            if (count <= MAX_POS):
+                data_positive.append(line.strip())
+            elif (count > MIN_NEG) and (count <= (MIN_NEG + MAX_POS)):
+                data_negative.append(line.strip())
+            elif (count > MIN_NEU) and (count <= TOTAL):
+                data_neural.append(line.strip())
         count = 0
         for line in fLabel:
             count += 1
-            if (count <= MAX_POS) or \
-                    (count > MIN_NEG and count <= (MIN_NEG + MAX_POS)) or \
-                    (count > MIN_NEU and count <= TOTAL):
-                label.append(line)
-        print(label.__len__())
-    # shuffle two lists
-    data_shuf = []
-    label_shuf = []
-    index_shuf = list(range(len(data)))
-    random.shuffle(index_shuf)
-    for i in index_shuf:
-        data_shuf.append(data[i])
-        label_shuf.append(label[i])
+            if (count <= MAX_POS):
+                label_positive.append(line.strip())
+            elif (count > MIN_NEG) and (count <= (MIN_NEG + MAX_POS)):
+                label_negative.append(line.strip())
+            elif (count > MIN_NEU) and (count <= TOTAL):
+                label_neural.append(line.strip())
+
+    print("positive length", len(data_positive), len(label_positive))
+    print("negative length", len(data_negative), len(label_negative))
+    print("neural length", len(data_neural), len(label_neural))
+    TRAIN_LIMIT = 20000
+    TEST_LIMIT = 2000
+    count = 0
+    for i in range(len(data_positive)):
+        if i >= (TRAIN_LIMIT + TEST_LIMIT):
+            break
+        if i < TRAIN_LIMIT:
+            train_data.append(data_positive[i])
+            train_label.append(label_positive[i])
+            train_data.append(data_negative[i])
+            train_label.append(label_negative[i])
+        else:
+            test_data.append(data_positive[i])
+            test_label.append(label_positive[i])
+            test_data.append(data_negative[i])
+            test_label.append(label_negative[i])
+            if count < len(data_neural):
+                test_data.append(data_neural[count])
+                test_label.append(label_neural[count])
+                count+=1
+        if i < 17000:
+            train_data.append(data_neural[i])
+            train_label.append(label_neural[i])
+            count = i+1
+    print("traindata length", len(train_data))
+    print("trainlabel length", len(train_label))
+    print("testdata length", len(test_data))
+    print("testlabel length", len(test_data))
     # 240317
-    return data[:MIDDLE], label[:MIDDLE], data[MIDDLE:END], label[MIDDLE:END]
+    return train_data, train_label, test_data, test_label
 
 class PaddedDataIterator():
     def __init__(self, data):
@@ -82,8 +117,11 @@ class PaddedDataIterator():
         # print(label.shape[1])
         return label
 
-train_data, train_label, test_data, test_label = loadTrainAndTest()
-
+train_data, train_label, test_data, test_label = loadTrTe()
+# for i in range(19000, 19010):
+#     print(train_label[i])
+#     # print(test_label[i])
+# sys.exit()
 tr_data = PaddedDataIterator(train_data)
 tr_label = PaddedDataIterator(train_label)
 te_label = PaddedDataIterator(test_label)
@@ -188,3 +226,7 @@ plt.show()
 #     tokens.append(int("4"))
 #     print(tokens)
 # padd_test()
+"""
+training cost  0.0212502378778
+testing cost: 0.00919519457966
+"""
