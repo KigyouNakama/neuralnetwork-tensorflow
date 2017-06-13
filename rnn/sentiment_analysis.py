@@ -1,7 +1,7 @@
 import csv, gzip, json
 import re
 import os, random, tensorflow as tf
-
+import matplotlib.pyplot as plt
 from nltk.tokenize import word_tokenize
 from nltk import PorterStemmer
 from numpy import array
@@ -11,6 +11,8 @@ csv.field_size_limit(500 * 1024 * 1024)
 commonPath = '/home/linhdang/rnn/data/'
 pEncodeData = os.path.abspath(commonPath+'encode_data')
 pEncodeLabel = os.path.abspath(commonPath+'encode_label')
+pTrainingCost = os.path.abspath(commonPath+'training_cost')
+pTestingCost = os.path.abspath(commonPath+'tesing_cost')
 
 def loadTrainAndTest():
     data = []
@@ -53,7 +55,7 @@ class PaddedDataIterator():
     def __init__(self, data):
         self.data = data
         self.max_len = 50
-        self.batch_size = 10
+        self.batch_size = 100
         self.vocab_size = 67259
         self.num_of_classes = 3
 
@@ -124,24 +126,56 @@ cost = tf.reduce_mean(tf.square(y - rnn_outputs))
 train_op = tf.train.RMSPropOptimizer(0.005, 0.2).minimize(cost)
 
 EPOCHS = 2
-PRINT_STEP = 1
-BATCH_SIZE = 10
-NUM_OF_BATCHES = int(len(train_data)/BATCH_SIZE) # batch_size
-print(NUM_OF_BATCHES)
+EVAL_STEP = 1
+BATCH_SIZE = 100
+NUM_OF_BATCHES_DATA = int(len(train_data)/BATCH_SIZE) # batch_size
+NUM_OF_BATCHES_LABEL = int(len(test_data)/BATCH_SIZE)
+
+print(NUM_OF_BATCHES_DATA)
 print("start training")
+training_cost = []
+testing_cost = []
 with tf.Session() as sess:
     tf.global_variables_initializer().run()
     for i in range(EPOCHS):
         print("EPOCHS %d"%(i+1))
-        for j in range(NUM_OF_BATCHES):
+        step, final_cost = 0, 0
+        for j in range(NUM_OF_BATCHES_DATA):
             batch_data = tr_data.next_batch_data(j)
             batch_label = tr_label.next_batch_label(j)
             sess.run(train_op, feed_dict={data_holder: batch_data, \
                                           label_holder: batch_label})
-        if i % PRINT_STEP == 0:
-            c = sess.run(cost, feed_dict={data_holder: batch_data, \
-                                          label_holder: batch_label})
-            print('training cost:', c * 100)
+            train_cost = sess.run(cost, feed_dict={data_holder: batch_data, \
+                                                   label_holder: batch_label})
+            final_cost+=train_cost
+            step+=1
+            print(step)
+
+        print("training cost ",final_cost/step)
+        training_cost.append(final_cost/step)
+
+        if i % EVAL_STEP == 0:
+            step, final_cost = 0, 0
+            for j in range(NUM_OF_BATCHES_LABEL):
+                test_cost = sess.run(cost, feed_dict={data_holder: te_data.next_batch_data(j), \
+                                          label_holder: te_label.next_batch_label(j)})
+                final_cost += train_cost
+                step += 1
+                # print(step)
+            print('testing cost:', final_cost/step)
+            testing_cost.append(final_cost/step)
+
+with open(pTrainingCost, 'w') as fTrCost:
+    for i in training_cost:
+        fTrCost.write("%f\n"%i)
+with open(pTestingCost, 'w') as fTeCost:
+    for i in testing_cost:
+        fTeCost.write("%f\n"%i)
+
+plt.plot(training_cost)
+plt.show()
+plt.plot(test_cost)
+plt.show()
 
 #
 # def padd_test():

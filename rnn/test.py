@@ -98,7 +98,7 @@ for j,i  in enumerate(mygenerator):
 
 x = [[0, 0, 2],
      [1, 0, 1]]
-print(x)
+print("length x", len(x))
 x_ = tf.one_hot(x, 3)
 x__ =  tf.unstack(x_, axis=2)
 s = tf.Session()
@@ -135,6 +135,7 @@ print(" ".join(str(x) for x in so))
 print("shuffle")
 list1 = [11,12,13,14]
 list2 = [4,3,2,1]
+print()
 # Given list1 and list2
 list1_shuf = []
 list2_shuf = []
