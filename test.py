@@ -1,3 +1,20 @@
+words = ["linh", "dang", "duy", "\0", "li"]
+word = "liiiii\0iiiiiii\0h"
+print(word.find('\0'))
+if '\0' in words:
+    print("co null")
+print(word.replace("\0", 'n'))
+from nltk.tokenize import RegexpTokenizer
+tokenizer = RegexpTokenizer('\s+', gaps=True)
+# tokenizer = RegexpTokenizer('\w+|\$[\d\.]+|\S+')
+print(tokenizer.tokenize("i have a.table is red $.39:)"))
+from nltk.tokenize import regexp_tokenize, wordpunct_tokenize, blankline_tokenize
+print(regexp_tokenize("i have a.table is red $.39:)", pattern='\w+|\$[\d\.]+|\S+'))
+
+output = [[1,2],
+          [3,4]]
+print(output[-1])
+"""
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.ops import rnn, rnn_cell
@@ -42,3 +59,4 @@ with tf.Session() as sess:
             print('training cost:', c)
     response = sess.run(y, feed_dict={x_: data})
     print(response)
+"""

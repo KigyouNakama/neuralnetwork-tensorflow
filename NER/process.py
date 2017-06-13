@@ -1,12 +1,15 @@
 import tensorflow as tf
 import numpy as np
-from tensorflow.python.ops import rnn, rnn_cell
-dir1 = "/home/dhbk/rnn/neuralnetwork-tensorflow/dataset/NonTag4type.tag"
-dir2 = "/home/dhbk/rnn/neuralnetwork-tensorflow/dataset/SubDict_vc.txt"
+#from tensorflow.python.ops import rnn
+from tensorflow.contrib.rnn import BasicRNNCell, BasicLSTMCell
+import codecs
+import sys
+dir1 = "/home/linhdang/rnn/neuralnetwork-tensorflow/dataset/NonTag4type.tag"
+dir2 = "/home/linhdang/rnn/neuralnetwork-tensorflow/dataset/SubDict_vc.txt"
 
 # is it better to eliminate from data (!?)
-weak_stop_token = [',',';','...','"','(',')','[',']','{','}','<','>','/','*','@',
-                   '#','$','%','^','&','-','_','+','=','|','~','`','“','”','-DOCSTART-']
+# weak_stop_token = [',',';','...','"','(',')','[',']','{','}','<','>','/','*','@',
+ #                  '#','$','%','^','&','-','_','+','=','|','~','`','“','”','-DOCSTART-']
 
 # end of one sequence. Is it better to eliminate from data (!?)
 strong_stop_token = ['.','\n',':','?','!']
@@ -19,22 +22,32 @@ class dataset:
 
     # return @dict[word: listValueOfFloatTypeVector]
     def makeDictFromDataset(self):
+        # count = 0
         dictionary = {}
         with open(dir2) as f:
             #    num = tf.cast(float(split[1]), tf.float32)
             #    print(sess.run(num))
             for line in f:
+                # count += 1
                 split = line.rstrip().lstrip().split(" ")
                 word = split.pop(0).lower()
+
                 # map string type vector to float type vector
                 split = list(map(float, split))
                 dictionary[word] = split
+                # if count < 20:
+                #     print(split)
+                #     print(dictionary[word])
+                #     print(word)
+                #     print("-------")
         return dictionary
 
     # wasted resource
     def getEntity(self, entity):
         list = [0] * 11
         list[named_entity.index(entity)] = 1
+        # if entity != "O":
+        #     print(entity+" "+str(list))
         return list
 
     def getData(self, dict):
@@ -42,24 +55,45 @@ class dataset:
         outputSequence = [] # list of word in outputSequence
         inputBatch = [] # list of sequence in inputBatch
         outputBatch = [] # list of sequence in outputBatch
-
-        with open(dir1) as f:
+        flag = False
+        count = []
+        with codecs.open(dir1, "r", encoding='utf-8', errors='ignore') as f:
+        #with open(dir1) as f:
             for line in f:
                 split = line.rstrip().lstrip().split(" ")
-                if len(split) == 3:
+                if line.__contains__("DOCSTART"):
+                    # print("good")
+                    continue
+                if len(split) >= 2:
+                    flag = True
                     wordVector = dict.get(split[0].lower())
                     if wordVector == None:
-                        wordVector = np.random.uniform(-1,1,200)
+                        wordVector = np.random.uniform(-1,1,200) # generate word vector if not exist
                         wordVector = list(wordVector)
                 #    if len(wordVector) == 200:
-                #        print(type(wordVector))
+
+                    if len(split) == 2:
+                        if (split[0] != "CH"):
+                            outputSequence.append(self.getEntity('O'))
+                        else:
+                            continue
+                    else:
+                        outputSequence.append(self.getEntity((split[2])))
                     inputSequence.append(wordVector)
-                    outputSequence.append(self.getEntity((split[2])))
                     if split[0] in strong_stop_token:
                         inputBatch.append(inputSequence)
                         outputBatch.append(outputSequence)
+                        # if len(outputSequence) != 179:
+                        count.append(len(outputSequence))
                         inputSequence = []
                         outputSequence = []
+                        flag = False
+                if line.rstrip().lstrip() == "" and flag == True:
+                    inputBatch.append(inputSequence)
+                    outputBatch.append(outputSequence)
+                    inputSequence = []
+                    outputSequence = []
+                    flag = False
         # each word represented by float type vector
         return inputBatch, outputBatch
 
@@ -76,7 +110,8 @@ class dataset:
         return length
 
 class SequenceLabelling:
-    def __init__(self, data, target, num_hidden = 200, num_layers = 1):
+
+    def __init__(self, data, target, num_hidden = 200, num_layers = 1, learning_rate = 0.1):
         self.data = data
         self.target = target # batch size * timesteps(input sequence length) * features (word vector length)
         self.num_hidden = num_hidden # bactch size * timesteps * output size (classes size)
@@ -85,14 +120,20 @@ class SequenceLabelling:
         self.er = self.error()
         self.loss = self.cost()
         self.opt = self.optimize()
+        self.learning_rate = learning_rate
 
     def prediction(self):
         numu = int(self.data.get_shape()[2])
-        cell = rnn_cell.GRUCell(numu)
-        output, _ = rnn.dynamic_rnn(
-            cell,
+        print(int(self.data.get_shape()[2]))
+        print(int(self.data.get_shape()[1]))
+        print(int(self.data.get_shape()[0]))
+        cell = BasicRNNCell(numu)
+        state = tf.zeros([10, cell.state_size])
+        output, state = cell(
+            #cell,
             self.data,
-            dtype = tf.float32
+            state
+            #dtype = tf.float32
         )
         # softmax layer
         max_length = int(self.target.get_shape()[1]) # timesteps
@@ -114,8 +155,8 @@ class SequenceLabelling:
 
 
     def optimize(self):
-        learning_rate = 0.005
-        optimizer = tf.train.RMSPropOptimizer(learning_rate)
+        # learning_rate = 0.005
+        optimizer = tf.train.RMSPropOptimizer(self.learning_rate)
         return optimizer.minimize(self.loss)
 
     def error(self):
@@ -139,26 +180,24 @@ dict = process.makeDictFromDataset()
 print("kich co tu dien", len(dict))
 x, y = process.getData(dict)
 #process.enummerate(x)
-
-# batch size x, y = 22151, 22151
+# batch size x, y = 23304, 23304
 print("do dai cua batch input", len(x))
 print("do dai cua batch output", len(y))
 # x, y max_length of sequence = 179
 print("do dai lon nhat cua moi xau", max(len(z) for z in x))
-print("do dai nho nhat cua moi xau", min(len(z) for z in x[:100]))
+print("do dai nho nhat cua moi xau", min(len(z) for z in x))
 
 # check for length
-def check_length():
-    for string in x[:1000]:
+def check_length_afer_padding(x, l):
+    for string in x:
         if len(string) != 179:
-            print("la")
+            print("la1")
         for word in string:
-            if len(word) != 200:
-                print("la")
-
+            if len(word) != l:#11
+                print("la2")
 # padding for input
 def padding(x,type):
-    feature_length = 0
+    #feature_length = 0
     if type == "in":
         feature_length = 200
     else: feature_length = 11
@@ -170,17 +209,19 @@ def padding(x,type):
             string += pad
     return x
 
-num_start = 2000
-num_immediate = 12000
+num_start = 0
+num_immediate = 21000
 num_end = 21000
-x_train = x[num_start:num_immediate]
-y_train = y[num_start:num_immediate]
-x_test = x[20000:num_end]
-y_test = y[20000:num_end]
+x_train = x[:num_immediate]
+y_train = y[:num_immediate]
+x_test = x[21000:]
+y_test = y[21000:]
 #print(type(x_test))
 
 x_test = padding(x_test, "in")
 y_test = padding(y_test, "out")
+check_length_afer_padding(x_test,200)
+check_length_afer_padding(y_test,11)
 
 #x_test = tf.convert_to_tensor(x_test)
 #y_test = tf.convert_to_tensor(y_test)
@@ -200,15 +241,17 @@ print("start")
 
 #print(len(x_train[110]))
 
-data = tf.placeholder(tf.float32, [None, 179, 200])
-target = tf.placeholder(tf.float32, [None, 179, 11])
+data = tf.placeholder(tf.float32, [10, 179, 200])
+target = tf.placeholder(tf.float32, [10, 179, 11])
 model = SequenceLabelling(data, target)
 sess = tf.Session()
 sess.run(tf.initialize_all_variables())
-for epoch in range(10):
-    for index in range(100):
-        x_feed = x_train[index*100:(index+1)*100]
-        y_feed = y_train[index*100:(index+1)*100]
+for epoch in range(50):
+    if (epoch > 25):
+        model.learning_rate = 0.005
+    for index in range(2100):
+        x_feed = x_train[index*10:(index+1)*10]
+        y_feed = y_train[index*10:(index+1)*10]
         x_feed = padding(x_feed, "in")
         y_feed = padding(y_feed, "out")
         sess.run(model.opt,
